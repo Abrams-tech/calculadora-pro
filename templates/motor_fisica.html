@@ -27,6 +27,18 @@
     </style>
 </head>
 <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div style="max-width: 800px; margin: 20px auto;">
+      {% for category, message in messages %}
+        <div style="padding: 15px; border-radius: 6px; color: white; margin-bottom: 10px;
+             background-color: {% if category == 'error' %}#e74c3c{% elif category == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
     <div class="container">
         <h1>Calculadora Pro Física 🚀</h1>
         <p class="subtitulo">Simulador de Movimiento de Proyectiles (Tiro Parabólico)</p>
