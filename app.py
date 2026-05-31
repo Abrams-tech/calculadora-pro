@@ -18,7 +18,7 @@ db.init_app(app)
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
-CORREO_ADMIN = "tu_correo_personal@ejemplo.com" 
+CORREO_ADMIN = "m41abrams@gmail.com" 
 
 @app.route('/')
 def index(): return render_template('index.html')
@@ -171,6 +171,8 @@ def pago_exitoso():
             flash("¡Pago exitoso! Funciones Premium activadas.", "success")
     return redirect(url_for('dashboard'))
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context(): db.create_all()
     app.run(debug=True)
