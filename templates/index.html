@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+</head>
+<body class="bg-slate-50 font-sans antialiased text-slate-800">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-indigo-600">Calculadora<span class="text-slate-800">Pro</span></h1>
+            <div class="flex items-center gap-4">
+                {% if session.get('usuario_id') %}
+                    <span class="text-slate-600 font-medium">Hola, {{ session.get('usuario_nombre') }}</span>
+                    <a href="/historial" class="text-indigo-600 hover:text-indigo-800 font-medium transition">Mi Historial</a>
+                    <a href="/logout" class="text-sm text-red-500 hover:text-red-700 font-medium transition">Salir</a>
+                {% else %}
+                    <a href="/login" class="text-slate-600 hover:text-indigo-600 font-medium transition">Entrar</a>
+                    <a href="/registro" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold py-2 px-4 rounded-lg transition">Crear Cuenta</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 h-fit">
+                <h2 class="text-xl font-bold mb-6">Configuración del Problema</h2>
+                <form id="form-calculadora" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Materia:</label>
+                        <select id="selector-materia" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium text-indigo-700">
+                            <option value="matematicas">Álgebra (Ecuaciones)</option>
+                            <option value="matematicas-derivada">Cálculo (Derivadas)</option>
+                            <option value="fisica-parabolico">Cinemática (Tiro Parabólico)</option>
+                            <option value="fisica-caida">Física (Caída Libre)</option>
+                            <option value="fisica-mrua">Dinámica (MRUA)</option>
+                        </select>
+                    </div>
+
+                    <div id="bloque-matematicas" class="space-y-4">
+                        <label class="block text-sm font-medium text-slate-700">Ecuación:</label>
+                        <input type="text" id="input-ecuacion" class="w-full px-4 py-3 rounded-lg border outline-none font-mono" placeholder="Ej: 3*x - 12 = 0">
+                    </div>
+
+                    <div id="bloque-derivada" class="space-y-4 hidden">
+                        <label class="block text-sm font-medium text-slate-700">Función f(x) a derivar:</label>
+                        <input type="text" id="input-funcion" class="w-full px-4 py-3 rounded-lg border outline-none font-mono" placeholder="Ej: 4*x**3 + 2*x - 5">
+                        <p class="text-xs text-slate-400 mt-1">Usa ** para potencias (ej: x**2 es x al cuadrado).</p>
+                    </div>
+
+                    <div id="bloque-fisica" class="grid grid-cols-2 gap-4 hidden">
+                        <div><label class="block text-sm font-medium text-slate-700">v0 (m/s)</label><input type="number" step="any" id="input-velocidad" class="w-full p-3 border rounded-lg"></div>
+                        <div><label class="block text-sm font-medium text-slate-700">Ángulo (°)</label><input type="number" step="any" id="input-angulo" class="w-full p-3 border rounded-lg"></div>
+                    </div>
+
+                    <div id="bloque-caida" class="space-y-4 hidden">
+                        <label class="block text-sm font-medium text-slate-700">Altura Inicial (m)</label>
+                        <input type="number" step="any" id="input-altura" class="w-full p-3 border rounded-lg">
+                    </div>
+
+                    <div id="bloque-mrua" class="grid grid-cols-3 gap-2 hidden">
+                        <div><label class="block text-xs font-medium text-slate-700">v0 (m/s)</label><input type="number" step="any" id="input-mrua-v0" class="w-full p-3 border rounded-lg" placeholder="0"></div>
+                        <div><label class="block text-xs font-medium text-slate-700">Acel. (m/s²)</label><input type="number" step="any" id="input-mrua-a" class="w-full p-3 border rounded-lg" placeholder="2.5"></div>
+                        <div><label class="block text-xs font-medium text-slate-700">Tiempo (s)</label><input type="number" step="any" id="input-mrua-t" class="w-full p-3 border rounded-lg" placeholder="10"></div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95">Resolver Paso a Paso</button>
+                </form>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 min-h-[400px]">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">Procedimiento</h2>
+                <div id="contenedor-resultados" class="space-y-4">
+                    <p class="text-sm italic text-slate-400">Introduce las variables del problema científico para desglosar la solución.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const sel = document.getElementById('selector-materia');
+        
+        function actualizarBloques() {
+            ['matematicas', 'derivada', 'fisica', 'caida', 'mrua'].forEach(id => {
+                const el = document.getElementById(`bloque-${id}`);
+                if (el) el.classList.add('hidden');
+            });
+
+            const val = sel.value;
+            if (val === 'matematicas') document.getElementById('bloque-matematicas').classList.remove('hidden');
+            if (val === 'matematicas-derivada') document.getElementById('bloque-derivada').classList.remove('hidden');
+            if (val === 'fisica-parabolico') document.getElementById('bloque-fisica').classList.remove('hidden');
+            if (val === 'fisica-caida') document.getElementById('bloque-caida').classList.remove('hidden');
+            if (val === 'fisica-mrua') document.getElementById('bloque-mrua').classList.remove('hidden');
+        }
+
+        sel.addEventListener('change', actualizarBloques);
+
+        document.getElementById('form-calculadora').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const mat = sel.value;
+            const res = document.getElementById('contenedor-resultados');
+            let endpoint = '', payload = {};
+
+            if (mat === 'matematicas') {
+                endpoint = '/api/resolver';
+                payload = { ecuacion: document.getElementById('input-ecuacion').value };
+            } else if (mat === 'matematicas-derivada') {
+                endpoint = '/api/matematicas/derivada';
+                payload = { funcion: document.getElementById('input-funcion').value };
+            } else if (mat === 'fisica-parabolico') {
+                endpoint = '/api/fisica/parabolico';
+                payload = { velocidad: document.getElementById('input-velocidad').value, angulo: document.getElementById('input-angulo').value };
+            } else if (mat === 'fisica-caida') {
+                endpoint = '/api/fisica/caida-libre';
+                payload = { altura: document.getElementById('input-altura').value };
+            } else if (mat === 'fisica-mrua') {
+                endpoint = '/api/fisica/mrua';
+                payload = { 
+                    v0: document.getElementById('input-mrua-v0').value,
+                    a: document.getElementById('input-mrua-a').value,
+                    t: document.getElementById('input-mrua-t').value
+                };
+            }
+            
+            res.innerHTML = '<p class="text-indigo-500 font-medium animate-pulse">Procesando consulta analítica...</p>';
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                res.innerHTML = '';
+                
+                if (data.status === 'success') {
+                    data.procedimiento.forEach((paso, idx) => {
+                        if (paso === "BLOQUEO_PREMIUM") {
+                            res.innerHTML += `
+                                <div class="bg-gradient-to-br from-slate-900 to-indigo-900 text-white p-6 rounded-xl text-center shadow-md my-4">
+                                    <h3 class="text-xl font-bold mb-2">Desglose Bloqueado</h3>
+                                    <p class="text-indigo-200 mb-4 text-sm">Las sustituciones avanzadas y el desarrollo paso a paso son exclusivos de usuarios Premium.</p>
+                                    <a href="/checkout" class="inline-block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-6 rounded-full text-sm transition transform active:scale-95">Desbloquear por $49 MXN/mes</a>
+                                </div>`;
+                            return;
+                        }
+                        const htmlMath = katex.renderToString(paso, { throwOnError: false, displayMode: true });
+                        const esUltimo = idx === data.procedimiento.length - 1;
+                        res.innerHTML += `<div class="${esUltimo ? 'bg-green-50 text-green-950 font-bold border border-green-200' : 'bg-slate-50 border border-slate-100'} p-3 rounded-lg overflow-x-auto">${htmlMath}</div>`;
+                    });
+                } else {
+                    res.innerHTML = `<p class="text-red-500">${data.procedimiento[0]}</p>`;
+                }
+            } catch (err) {
+                res.innerHTML = '<p class="text-red-500">Fallo de comunicación interna con el servidor.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
