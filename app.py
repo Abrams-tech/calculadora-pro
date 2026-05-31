@@ -123,6 +123,18 @@ def matematicas():
                 pasos.append(f"1. Función original: $$f(x) = {sp.latex(expr)}$$")
                 pasos.append(f"2. Integral: $$\\int f(x) dx = {sp.latex(integral)} + C$$")
 
+# ---> AGREGA ESTE BLOQUE PARA GUARDAR EN LA BD <---
+            if 'usuario_id' in session and es_premium:
+                from models import Historial
+                nuevo_registro = Historial(
+                    usuario_id=session['usuario_id'],
+                    materia=materia,
+                    ecuacion=sp.latex(expr),
+                    resultado=resultado_final
+                )
+                db.session.add(nuevo_registro)
+                db.session.commit()
+            # ---> FIN DEL BLOQUE DE GUARDADO <---
             return render_template('motor_matematicas.html', 
                                    resultado=resultado_final, 
                                    pasos=pasos, 

@@ -3,52 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial de Operaciones</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-</head>
-<body class="bg-slate-50 font-sans antialiased text-slate-800">
+    <title>Historial - Calculadora Pro</title>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-    <nav class="bg-white shadow-sm border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold text-indigo-600">Calculadora<span class="text-slate-800">Pro</span></a>
-            <div class="flex items-center gap-4">
-                <a href="/" class="text-slate-600 hover:text-indigo-600 font-medium transition">Panel Principal</a>
-                <a href="/logout" class="text-sm text-red-500 hover:text-red-700 font-medium transition">Salir</a>
-            </div>
+    <style>
+        /* ==========================================
+           DISEÑO OSCURO UNIFICADO
+           ========================================== */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+        
+        .navbar { background-color: #1e293b; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-bottom: 1px solid #334155; }
+        .nav-brand { color: #38bdf8; font-size: 22px; font-weight: bold; text-decoration: none; }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-item { color: #cbd5e1; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 500; transition: 0.3s; }
+        .nav-item:hover { background-color: #334155; color: #fff; }
+        .nav-logout { color: #f87171; font-weight: bold; padding: 8px 15px; border-radius: 6px; text-decoration: none; border: 1px solid #f87171; transition: 0.3s; margin-left: 10px; }
+        .nav-logout:hover { background-color: #f87171; color: #0f172a; }
+
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        h1 { color: #f8fafc; text-align: center; margin-bottom: 10px; font-size: 32px; }
+        .subtitulo { text-align: center; color: #94a3b8; margin-bottom: 40px; font-size: 16px; }
+
+        /* Tarjetas del Historial */
+        .historial-grid { display: flex; flex-direction: column; gap: 25px; }
+        
+        .tarjeta-historial { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); transition: transform 0.2s; }
+        .tarjeta-historial:hover { border-color: #38bdf8; transform: translateY(-3px); }
+        
+        .badge-materia { display: inline-block; background: #0f172a; border: 1px solid #475569; color: #38bdf8; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1px; }
+        
+        .seccion-titulo { color: #94a3b8; margin-bottom: 10px; font-size: 14px; font-weight: bold; text-transform: uppercase; }
+        
+        .ecuacion-box { background: #0f172a; padding: 15px; border-radius: 8px; border-left: 4px solid #475569; margin-bottom: 20px; overflow-x: auto; font-size: 18px; color: #f8fafc; }
+        .resultado-box { background: #0f172a; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; overflow-x: auto; color: #10b981; font-size: 18px; }
+        
+        /* Estado Vacío */
+        .empty-state { text-align: center; padding: 60px 20px; background: #1e293b; border-radius: 12px; border: 2px dashed #475569; color: #94a3b8; }
+        .btn-resolver { display: inline-block; margin-top: 20px; padding: 12px 25px; background: #38bdf8; color: #0f172a; text-decoration: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .btn-resolver:hover { background: #0ea5e9; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/dashboard" class="nav-brand">⚙️ Calculadora Pro</a>
+        <div class="nav-links">
+            <a href="/dashboard" class="nav-item">Mi Perfil</a>
+            <a href="/matematicas" class="nav-item">Matemáticas</a>
+            <a href="/historial" class="nav-item" style="color: #38bdf8;">Historial</a>
+            <a href="/logout" class="nav-logout">Salir</a>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto px-4 py-10">
-        <h2 class="text-2xl font-bold mb-6">Registro de Consultas Previas</h2>
-        <div class="space-y-4">
+    <div class="container">
+        <h1>📚 Tu Bitácora Analítica</h1>
+        <p class="subtitulo">Registro histórico de problemas resueltos por el motor.</p>
+
+        <div class="historial-grid">
             {% if registros %}
-                {% for r in registros %}
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <span class="text-xs font-semibold uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Cálculo Exitoso</span>
-                        <h3 class="font-medium text-slate-700 mt-2 text-sm">{{ r.problema }}</h3>
+                {% for registro in registros %}
+                    <div class="tarjeta-historial">
+                        <span class="badge-materia">{{ registro.materia }}</span>
+                        
+                        <div class="seccion-titulo">Expresión Original:</div>
+                        <div class="ecuacion-box">
+                            $${{ registro.ecuacion }}$$
+                        </div>
+                        
+                        <div class="seccion-titulo">Solución Calculada:</div>
+                        <div class="resultado-box">
+                            {{ registro.resultado | safe }}
+                        </div>
                     </div>
-                    <div class="bg-slate-50 px-4 py-2 rounded border border-slate-100 w-full md:w-1/2 overflow-x-auto math-item text-sm">
-                        {{ r.resultado }}
-                    </div>
-                </div>
                 {% endfor %}
             {% else %}
-                <div class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-200">
-                    <p class="text-slate-400 mb-4">No se registran transacciones operacionales aún.</p>
-                    <a href="/" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition">Volver</a>
+                <div class="empty-state">
+                    <div style="font-size: 50px; margin-bottom: 20px;">🔍</div>
+                    <h3 style="color: #f8fafc; margin-top: 0;">Aún no hay registros en tu bitácora</h3>
+                    <p>Ve al motor de matemáticas y procesa tu primera ecuación. Se guardará aquí automáticamente.</p>
+                    <a href="/matematicas" class="btn-resolver">Procesar un problema</a>
                 </div>
             {% endif %}
         </div>
-    </main>
+    </div>
 
-    <script>
-        document.querySelectorAll('.math-item').forEach(el => {
-            const formula = el.textContent.trim();
-            katex.render(formula, el, { throwOnError: false, displayMode: true });
-        });
-    </script>
 </body>
 </html>
