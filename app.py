@@ -134,6 +134,7 @@ def matematicas():
 
     return render_template('motor_matematicas.html', es_premium=es_premium)
 @app.route('/fisica', methods=['GET', 'POST'])
+
 def fisica():
     if 'usuario_id' not in session: return redirect(url_for('login'))
     usuario_actual = Usuario.query.get(session['usuario_id'])
@@ -183,6 +184,31 @@ def pago_exitoso():
             flash("¡Pago exitoso! Funciones Premium activadas.", "success")
     return redirect(url_for('dashboard'))
 
+
+
+# ... (aquí arriba terminan tus otras rutas como la de matemáticas o dashboard) ...
+
+# ---> PEGA AQUÍ LA RUTA DEL HISTORIAL <---
+@app.route('/historial')
+def historial():
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+        
+    usuario = Usuario.query.get(session['usuario_id'])
+    
+    if not usuario.es_premium:
+        flash("El historial de problemas es una función exclusiva de la versión Premium.", "warning")
+        return redirect(url_for('dashboard'))
+        
+    registros = Historial.query.filter_by(usuario_id=usuario.id).order_by(Historial.id.desc()).all()
+    return render_template('historial.html', registros=registros, usuario=usuario)
+
+# (Esto es lo que ya tienes al final de tu archivo)
+with app.app_context():
+    db.create_all()
+
+if __name__ == '__main__':
+    app.run(debug=True)
 with app.app_context():
     db.create_all()
 
