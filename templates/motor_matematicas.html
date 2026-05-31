@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Pro - Matemáticas Avanzadas</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
+        .subtitulo { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #34495e; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input:focus, select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
+        button { width: 100%; padding: 14px; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #2980b9; }
+        
+        .error-msj { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-top: 25px; border-left: 5px solid #dc3545; }
+        .resultados-container { margin-top: 35px; padding: 25px; background-color: #f8f9fa; border-left: 6px solid #2ecc71; border-radius: 8px; }
+        .resultados-container h3 { margin-top: 0; color: #27ae60; }
+        
+        .pasos-resolucion { margin-top: 20px; }
+        .pasos-resolucion ul { background: #e9ecef; padding: 20px 40px; border-radius: 8px; list-style-type: decimal; }
+        .pasos-resolucion li { margin-bottom: 12px; font-size: 16px; color: #2c3e50; }
+        
+        .grafica-container { margin-top: 25px; text-align: center; }
+        .grafica-container img { max-width: 100%; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); border: 1px solid #ddd; }
+        
+        .paywall-banner { background-color: #fff3cd; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center; border: 1px solid #ffeeba; }
+        .paywall-banner p { font-size: 16px; color: #856404; margin-bottom: 15px; }
+        .btn-warning { display: inline-block; padding: 12px 25px; background-color: #f39c12; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; transition: background 0.3s; }
+        .btn-warning:hover { background-color: #d68910; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora Pro 🧮</h1>
+        <p class="subtitulo">Motor de cálculo simbólico. Derivadas, integrales, límites y sistemas.</p>
+
+        <form method="POST" action="/matematicas">
+            <div class="form-group">
+                <label for="operacion">¿Qué operación necesitas resolver?</label>
+                <select name="operacion" id="operacion" required>
+                    <option value="derivada">Derivada</option>
+                    <option value="integral">Integral</option>
+                    <option value="limite">Límite</option>
+                    <option value="sistema">Sistema de Ecuaciones (2x2)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="expresion">Expresión Matemática principal</label>
+                <input type="text" name="expresion" id="expresion" placeholder="Ej. x**2 + 3*x" required>
+            </div>
+
+            <div class="form-group">
+                <label for="variable">Variable a evaluar</label>
+                <input type="text" name="variable" id="variable" value="x" required>
+            </div>
+
+            <div class="form-group">
+                <label for="limite_val">Valor al que tiende (Solo para límites)</label>
+                <input type="text" name="limite_val" id="limite_val" placeholder="Ej. 0, 5, oo">
+            </div>
+
+            <div class="form-group">
+                <label for="expresion2">Segunda Ecuación (Solo para sistemas)</label>
+                <input type="text" name="expresion2" id="expresion2" placeholder="Ej. 2*x - y - 5">
+            </div>
+
+            <button type="submit">Calcular y Graficar</button>
+        </form>
+
+        {% if error %}
+            <div class="error-msj">
+                <strong>Error de sintaxis:</strong> {{ error }}
+            </div>
+        {% endif %}
+
+        {% if resultado %}
+            <div class="resultados-container">
+                <h3>Resultado Final: {{ resultado }}</h3>
+
+                {% if es_premium %}
+                    
+                    {% if pasos %}
+                    <div class="pasos-resolucion">
+                        <h4>Procedimiento paso a paso:</h4>
+                        <ul>
+                            {% for paso in pasos %}
+                                <li>{{ paso }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if grafica %}
+                    <div class="grafica-container">
+                        <h4>Visualización Gráfica:</h4>
+                        <img src="data:image/png;base64, {{ grafica }}" alt="Gráfica matemática generada por Matplotlib">
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <div class="paywall-banner">
+                        <p><strong>🔒 Desbloquea el procedimiento detallado y la gráfica interactiva</strong></p>
+                        <p>{{ pasos[0] }}</p>
+                        <a href="/checkout" class="btn-warning">Actualizar a Premium por $49 MXN</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
