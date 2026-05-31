@@ -3,44 +3,38 @@ import stripe
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from dotenv import load_dotenv
 
-from motor_matematicas import resolver_calculo, resolver_sistema_ecuaciones
+from motor_matematicas import resolver_calculo, resolver_sistema_ecuaciones, resolver_matriz
 from motor_fisica import resolver_tiro_parabolico
 from models import db, Usuario, Historial 
+from sympy import sympify
 
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'llave_desarrollo_local')
 
-# Base de datos en la ruta principal para evitar errores en Windows
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///plataforma_educativa.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
-
-# CAMBIA ESTO POR TU CORREO PARA TENER EL PASE VIP
 CORREO_ADMIN = "tu_correo_personal@ejemplo.com" 
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        
         if Usuario.query.filter_by(email=email).first():
-            flash(f"El correo {email} ya está registrado. Por favor, inicia sesión.", "error")
+            flash(f"El correo {email} ya está registrado.", "error")
             return redirect(url_for('registro'))
-        
         nuevo_usuario = Usuario(email=email, password=password)
         db.session.add(nuevo_usuario)
         db.session.commit()
-        
-        flash("¡Registro exitoso! Ya puedes iniciar sesión.", "success")
+        flash("¡Registro exitoso! Inicia sesión.", "success")
         return redirect(url_for('login'))
     return render_template('registro.html')
 
@@ -50,14 +44,11 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         usuario = Usuario.query.filter_by(email=email).first()
-        
         if usuario and usuario.password == password: 
             session['usuario_id'] = usuario.id
-            if usuario.email == CORREO_ADMIN:
-                flash("¡Bienvenido Modo Creador! Acceso VIP activado.", "success")
-            else:
-                flash("Sesión iniciada correctamente.", "success")
-            return redirect(url_for('matematicas'))
+            if usuario.email == CORREO_ADMIN: flash("¡Bienvenido Modo Creador! Acceso VIP.", "success")
+            else: flash("Sesión iniciada.", "success")
+            return redirect(url_for('dashboard'))
         else:
             flash("Correo o contraseña incorrectos.", "error")
             return redirect(url_for('login'))
@@ -69,22 +60,25 @@ def logout():
     flash("Sesión cerrada correctamente.", "success")
     return redirect(url_for('login'))
 
-@app.route('/matematicas', methods=['GET', 'POST'])
-def matematicas():
-    if 'usuario_id' not in session:
-        flash("Inicia sesión para usar la calculadora.", "warning")
-        return redirect(url_for('login')) 
-        
+@app.route('/dashboard')
+def dashboard():
+    if 'usuario_id' not in session: return redirect(url_for('login'))
     usuario_actual = Usuario.query.get(session['usuario_id'])
-    
-    # Escudo protector de sesión expirada o base de datos reiniciada
     if not usuario_actual:
         session.clear()
-        flash("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.", "warning")
         return redirect(url_for('login'))
+    if usuario_actual.email == CORREO_ADMIN: usuario_actual.es_premium = True
+    consultas_usuario = Historial.query.filter_by(usuario_id=usuario_actual.id).order_by(Historial.id.desc()).all()
+    return render_template('dashboard.html', usuario=usuario_actual, historial=consultas_usuario)
 
-    if usuario_actual.email == CORREO_ADMIN:
-        usuario_actual.es_premium = True
+@app.route('/matematicas', methods=['GET', 'POST'])
+def matematicas():
+    if 'usuario_id' not in session: return redirect(url_for('login')) 
+    usuario_actual = Usuario.query.get(session['usuario_id'])
+    if not usuario_actual:
+        session.clear()
+        return redirect(url_for('login'))
+    if usuario_actual.email == CORREO_ADMIN: usuario_actual.es_premium = True
 
     resultado, pasos, grafica, error = None, None, None, None
 
@@ -96,42 +90,45 @@ def matematicas():
 
         if operacion in ['derivada', 'integral', 'limite']:
             respuesta = resolver_calculo(operacion, expresion, variable, limite_val)
+            tema_guardar = operacion
         elif operacion == 'sistema':
             eq2 = request.form.get('expresion2') 
             var2 = request.form.get('variable2', 'y')
             respuesta = resolver_sistema_ecuaciones(expresion, eq2, variable, var2)
+            tema_guardar = "Sistema 2x2"
+        elif operacion == 'matriz':
+            op_matriz = request.form.get('operacion_matriz')
+            try:
+                matriz_3x3 = [
+                    [sympify(request.form.get('m00', '0')), sympify(request.form.get('m01', '0')), sympify(request.form.get('m02', '0'))],
+                    [sympify(request.form.get('m10', '0')), sympify(request.form.get('m11', '0')), sympify(request.form.get('m12', '0'))],
+                    [sympify(request.form.get('m20', '0')), sympify(request.form.get('m21', '0')), sympify(request.form.get('m22', '0'))]
+                ]
+                respuesta = resolver_matriz(matriz_3x3, op_matriz)
+                expresion = f"Matriz 3x3 ({op_matriz})"
+                tema_guardar = "Álgebra Lineal"
+            except Exception as e:
+                respuesta = {'exito': False, 'error': 'Verifica los valores ingresados.'}
 
         if respuesta['exito']:
             resultado_limpio = respuesta['resultado_limpio']
-            if usuario_actual.es_premium:
-                pasos, grafica = respuesta['pasos'], respuesta['grafica']
-            else:
-                pasos = ["Para ver el procedimiento analítico y la gráfica interactiva, actualiza a Premium."]
-            
-            db.session.add(Historial(usuario_id=usuario_actual.id, tema=operacion, problema=expresion, resultado=resultado_limpio))
+            if usuario_actual.es_premium: pasos, grafica = respuesta['pasos'], respuesta['grafica']
+            else: pasos = ["Para ver el procedimiento analítico, actualiza a Premium."]
+            db.session.add(Historial(usuario_id=usuario_actual.id, tema=tema_guardar, problema=expresion, resultado=resultado_limpio))
             db.session.commit()
             resultado = resultado_limpio
-        else:
-            error = respuesta['error']
+        else: error = respuesta['error']
 
     return render_template('motor_matematicas.html', resultado=resultado, pasos=pasos, grafica=grafica, error=error, es_premium=usuario_actual.es_premium)
 
 @app.route('/fisica', methods=['GET', 'POST'])
 def fisica():
-    if 'usuario_id' not in session:
-        flash("Inicia sesión para usar el simulador.", "warning")
-        return redirect(url_for('login'))
-        
+    if 'usuario_id' not in session: return redirect(url_for('login'))
     usuario_actual = Usuario.query.get(session['usuario_id'])
-    
-    # Escudo protector de sesión expirada o base de datos reiniciada
     if not usuario_actual:
         session.clear()
-        flash("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.", "warning")
         return redirect(url_for('login'))
-
-    if usuario_actual.email == CORREO_ADMIN:
-        usuario_actual.es_premium = True
+    if usuario_actual.email == CORREO_ADMIN: usuario_actual.es_premium = True
 
     resultado, pasos, grafica, error = None, None, None, None
 
@@ -139,19 +136,14 @@ def fisica():
         velocidad = request.form.get('velocidad')
         angulo = request.form.get('angulo')
         respuesta = resolver_tiro_parabolico(velocidad, angulo)
-        
         if respuesta['exito']:
             resultado_limpio = respuesta['resultado_limpio']
-            if usuario_actual.es_premium:
-                pasos, grafica = respuesta['pasos'], respuesta['grafica']
-            else:
-                pasos = ["Para ver las ecuaciones vectoriales paso a paso y la trayectoria gráfica, actualiza a Premium."]
-            
+            if usuario_actual.es_premium: pasos, grafica = respuesta['pasos'], respuesta['grafica']
+            else: pasos = ["Actualiza a Premium para ver la trayectoria gráfica."]
             db.session.add(Historial(usuario_id=usuario_actual.id, tema="Tiro Parabólico", problema=f"V={velocidad}, Ang={angulo}°", resultado=resultado_limpio))
             db.session.commit()
             resultado = resultado_limpio
-        else:
-            error = respuesta['error']
+        else: error = respuesta['error']
 
     return render_template('motor_fisica.html', resultado=resultado, pasos=pasos, grafica=grafica, error=error, es_premium=usuario_actual.es_premium)
 
@@ -164,7 +156,7 @@ def checkout():
             line_items=[{'price_data': {'currency': 'mxn', 'product_data': {'name': 'Calculadora Pro Premium'}, 'unit_amount': 4900}, 'quantity': 1}],
             mode='payment', 
             success_url=url_for('pago_exitoso', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('index', _external=True),
+            cancel_url=url_for('dashboard', _external=True),
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e: return f"Error con Stripe: {str(e)}"
@@ -177,7 +169,7 @@ def pago_exitoso():
             usuario.es_premium = True
             db.session.commit()
             flash("¡Pago exitoso! Funciones Premium activadas.", "success")
-    return redirect(url_for('matematicas'))
+    return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 import numpy as np
-from sympy import symbols, sympify, diff, integrate, limit, Eq, solve, latex, lambdify
+from sympy import symbols, sympify, diff, integrate, limit, Eq, solve, latex, lambdify, Matrix
 
 def generar_grafica_base64(funcion_sympy, variable, x_min=-10, x_max=10):
     try:
@@ -78,3 +78,29 @@ def resolver_sistema_ecuaciones(eq1_str, eq2_str, var1_str='x', var2_str='y'):
         return {"exito": True, "resultado_limpio": str(resultado), "pasos": pasos, "grafica": None}
     except Exception as e:
          return {"exito": False, "error": f"Error: {str(e)}"}
+
+def resolver_matriz(matriz_datos, operacion_matriz):
+    try:
+        M = Matrix(matriz_datos)
+        pasos = []
+        pasos.append(f"1. **Matriz original:** $A = {latex(M)}$")
+        
+        if operacion_matriz == 'determinante':
+            det = M.det()
+            pasos.append(f"2. Aplicamos expansión para calcular el determinante.")
+            pasos.append(f"**Resultado Final:** $\\det(A) = {latex(det)}$")
+            resultado = f"Determinante = {det}"
+            
+        elif operacion_matriz == 'inversa':
+            det = M.det()
+            if det == 0:
+                return {"exito": False, "error": "La matriz no tiene inversa porque su determinante es 0."}
+            inv = M.inv()
+            pasos.append(f"2. Calculamos el determinante: $\\det(A) = {latex(det)}$")
+            pasos.append(f"3. Aplicamos: $A^{{-1}} = \\frac{{1}}{{\\det(A)}} \\times \\text{{Adj}}(A)$")
+            pasos.append(f"**Resultado Final:** $A^{{-1}} = {latex(inv)}$")
+            resultado = "Matriz Inversa Calculada (Ver pasos en PDF)"
+            
+        return {"exito": True, "resultado_limpio": str(resultado), "pasos": pasos, "grafica": None}
+    except Exception as e:
+        return {"exito": False, "error": f"Error matricial: {str(e)}"}

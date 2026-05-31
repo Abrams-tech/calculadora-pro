@@ -3,127 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Pro - Matemáticas Avanzadas</title>
+    <title>Calculadora Pro - Matemáticas</title>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
-        .subtitulo { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
-        
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+        .navbar { background-color: #1e293b; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-bottom: 1px solid #334155; }
+        .nav-brand { color: #38bdf8; font-size: 22px; font-weight: bold; text-decoration: none; }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-item { color: #cbd5e1; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 500; transition: 0.3s; }
+        .nav-item:hover { background-color: #334155; color: #fff; }
+        .nav-logout { color: #f87171; font-weight: bold; padding: 8px 15px; border-radius: 6px; text-decoration: none; border: 1px solid #f87171; transition: 0.3s; margin-left: 10px; }
+        .nav-logout:hover { background-color: #f87171; color: #0f172a; }
+
+        .container { max-width: 800px; margin: 40px auto; background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        h1 { color: #f8fafc; text-align: center; margin-top: 0; }
+        .subtitulo { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 16px; }
+
         .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #34495e; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        input:focus, select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
-        button { width: 100%; padding: 14px; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-        button:hover { background-color: #2980b9; }
+        label { display: block; font-weight: 600; color: #94a3b8; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        select, input { width: 100%; padding: 14px; border: 1px solid #475569; border-radius: 8px; background-color: #0f172a; color: white; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
+        select:focus, input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }
         
-        .error-msj { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-top: 25px; border-left: 5px solid #dc3545; }
-        .resultados-container { margin-top: 35px; padding: 25px; background-color: #f8f9fa; border-left: 6px solid #2ecc71; border-radius: 8px; }
-        .resultados-container h3 { margin-top: 0; color: #27ae60; }
+        button { width: 100%; padding: 16px; background-color: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 15px; }
+        button:hover { background-color: #0ea5e9; transform: translateY(-2px); }
+
+        .matriz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .matriz-grid input { text-align: center; font-weight: bold; font-size: 18px; }
+
+        .loader-container { display: none; text-align: center; margin-top: 30px; }
+        .spinner { border: 4px solid rgba(255, 255, 255, 0.05); width: 40px; height: 40px; border-radius: 50%; border-left-color: #38bdf8; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader-text { color: #94a3b8; margin-top: 15px; font-weight: 500; }
+
+        .resultados-container { margin-top: 40px; padding: 30px; background-color: #0f172a; border-left: 6px solid #34d399; border-radius: 8px; border: 1px solid #334155; }
+        .resultados-container h3 { color: #34d399; margin-top: 0; font-size: 22px; }
+        .resultado-limpio { font-size: 20px; font-weight: bold; background: #1e293b; padding: 20px; border-radius: 8px; text-align: center; overflow-x: auto; color: #f8fafc; border: 1px solid #475569; margin-bottom: 20px;}
         
-        .pasos-resolucion { margin-top: 20px; }
-        .pasos-resolucion ul { background: #e9ecef; padding: 20px 40px; border-radius: 8px; list-style-type: decimal; }
-        .pasos-resolucion li { margin-bottom: 12px; font-size: 16px; color: #2c3e50; }
+        details { background: #1e293b; padding: 15px 20px; border-radius: 8px; border: 1px solid #475569; cursor: pointer; transition: 0.3s; }
+        summary { font-weight: bold; color: #38bdf8; outline: none; font-size: 16px; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: '▼'; font-size: 12px; color: #94a3b8; }
+        details[open] summary::after { transform: rotate(180deg); }
+        .pasos-lista { padding-left: 0; color: #cbd5e1; line-height: 1.8; margin-top: 20px; list-style: none; border-top: 1px solid #334155; padding-top: 15px; font-size: 16px; }
+        .pasos-lista li { margin-bottom: 10px; background: #0f172a; padding: 10px 15px; border-radius: 6px; overflow-x: auto; }
         
-        .grafica-container { margin-top: 25px; text-align: center; }
-        .grafica-container img { max-width: 100%; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); border: 1px solid #ddd; }
-        
-        .paywall-banner { background-color: #fff3cd; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center; border: 1px solid #ffeeba; }
-        .paywall-banner p { font-size: 16px; color: #856404; margin-bottom: 15px; }
-        .btn-warning { display: inline-block; padding: 12px 25px; background-color: #f39c12; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; transition: background 0.3s; }
-        .btn-warning:hover { background-color: #d68910; }
+        .grafica-container { margin-top: 30px; text-align: center; background: #cbd5e1; padding: 10px; border-radius: 8px; }
+        .grafica-container img { max-width: 100%; border-radius: 6px; }
+
+        .paywall-banner { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 30px; border-radius: 12px; margin-top: 30px; text-align: center; border: 1px solid #fbbf24; }
+        .btn-warning { background-color: #fbbf24; color: #0f172a; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: bold; display: inline-block; transition: 0.3s; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div style="max-width: 800px; margin: 20px auto;">
-      {% for category, message in messages %}
-        <div style="padding: 15px; border-radius: 6px; color: white; margin-bottom: 10px;
-             background-color: {% if category == 'error' %}#e74c3c{% elif category == 'warning' %}#f39c12{% else %}#2ecc71{% endif %};">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-    <div class="container">
-        <h1>Calculadora Pro 🧮</h1>
-        <p class="subtitulo">Motor de cálculo simbólico. Derivadas, integrales, límites y sistemas.</p>
 
-        <form method="POST" action="/matematicas">
+    <nav class="navbar">
+        <a href="/dashboard" class="nav-brand">⚙️ Calculadora Pro</a>
+        <div class="nav-links">
+            <a href="/dashboard" class="nav-item">Mi Perfil</a>
+            <a href="/matematicas" class="nav-item" style="color: #38bdf8;">Matemáticas</a>
+            <a href="/fisica" class="nav-item">Física</a>
+            <a href="/logout" class="nav-logout">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="max-width: 800px; margin: 0 auto 20px auto;">
+          {% for category, message in messages %}
+            <div style="padding: 15px; border-radius: 8px; color: white; margin-bottom: 10px; font-weight: bold; text-align: center;
+                 background-color: {% if category == 'error' %}#ef4444{% elif category == 'warning' %}#f59e0b{% else %}#10b981{% endif %};">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h1>Motor Lógico de Ingeniería</h1>
+        <p class="subtitulo">Ingresa tus datos. El motor procesará la solución analítica exacta.</p>
+
+        <form method="POST" action="/matematicas" id="calcForm">
             <div class="form-group">
-                <label for="operacion">¿Qué operación necesitas resolver?</label>
-                <select name="operacion" id="operacion" required>
-                    <option value="derivada">Derivada</option>
-                    <option value="integral">Integral</option>
-                    <option value="limite">Límite</option>
+                <label for="operacion">Operación Requerida</label>
+                <select name="operacion" id="operacion" required onchange="mostrarOcultarCampos()">
+                    <option value="derivada">Cálculo Diferencial (Derivadas)</option>
+                    <option value="integral">Cálculo Integral (Indefinidas)</option>
+                    <option value="limite">Límites Matemáticos</option>
                     <option value="sistema">Sistema de Ecuaciones (2x2)</option>
+                    <option value="matriz">Álgebra Lineal (Matrices 3x3)</option>
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="expresion">Expresión Matemática principal</label>
-                <input type="text" name="expresion" id="expresion" placeholder="Ej. x**2 + 3*x" required>
+            <div id="contenedor_normal">
+                <div class="form-group">
+                    <label for="expresion">Expresión / Función 1</label>
+                    <input type="text" name="expresion" id="expresion" placeholder="Ej: x**2 + 3*x - 5">
+                </div>
+                <div class="form-group" id="campo_variable">
+                    <label for="variable">Variable Principal</label>
+                    <input type="text" name="variable" id="variable" value="x">
+                </div>
+                <div class="form-group" id="campo_limite" style="display: none;">
+                    <label for="limite_val">¿A qué valor tiende la variable?</label>
+                    <input type="text" name="limite_val" id="limite_val" placeholder="Ej: 0, oo (infinito)">
+                </div>
+                <div class="form-group" id="campo_sistema" style="display: none;">
+                    <label for="expresion2">Expresión 2 (Igualada a 0)</label>
+                    <input type="text" name="expresion2" id="expresion2" placeholder="Ej: 2*x - y + 4">
+                    <label for="variable2" style="margin-top: 15px;">Segunda Variable</label>
+                    <input type="text" name="variable2" id="variable2" value="y">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="variable">Variable a evaluar</label>
-                <input type="text" name="variable" id="variable" value="x" required>
+            <div id="contenedor_matriz" style="display: none; background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #475569; margin-bottom: 20px;">
+                <label>¿Qué calculamos con la Matriz?</label>
+                <select name="operacion_matriz" id="operacion_matriz" style="margin-bottom: 15px;">
+                    <option value="determinante">Calcular Determinante</option>
+                    <option value="inversa">Calcular Matriz Inversa</option>
+                </select>
+                <label>Ingresa los valores de la Matriz 3x3:</label>
+                <div class="matriz-grid">
+                    <input type="text" name="m00" placeholder="a11" value="0">
+                    <input type="text" name="m01" placeholder="a12" value="0">
+                    <input type="text" name="m02" placeholder="a13" value="0">
+                    <input type="text" name="m10" placeholder="a21" value="0">
+                    <input type="text" name="m11" placeholder="a22" value="0">
+                    <input type="text" name="m12" placeholder="a23" value="0">
+                    <input type="text" name="m20" placeholder="a31" value="0">
+                    <input type="text" name="m21" placeholder="a32" value="0">
+                    <input type="text" name="m22" placeholder="a33" value="0">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="limite_val">Valor al que tiende (Solo para límites)</label>
-                <input type="text" name="limite_val" id="limite_val" placeholder="Ej. 0, 5, oo">
-            </div>
-
-            <div class="form-group">
-                <label for="expresion2">Segunda Ecuación (Solo para sistemas)</label>
-                <input type="text" name="expresion2" id="expresion2" placeholder="Ej. 2*x - y - 5">
-            </div>
-
-            <button type="submit">Calcular y Graficar</button>
+            <button type="submit" id="btnCalcular">Ejecutar Cálculo</button>
         </form>
 
+        <div class="loader-container" id="loader">
+            <div class="spinner"></div>
+            <div class="loader-text">Procesando código simbólico...</div>
+        </div>
+
         {% if error %}
-            <div class="error-msj">
-                <strong>Error de sintaxis:</strong> {{ error }}
+            <div style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 20px; border-radius: 8px; margin-top: 30px; border: 1px solid #ef4444;">
+                <strong>Error:</strong> {{ error }}
             </div>
         {% endif %}
 
         {% if resultado %}
-            <div class="resultados-container">
-                <h3>Resultado Final: {{ resultado }}</h3>
+            <div class="resultados-container" id="zonaResultados">
+                <h3>Solución Analítica</h3>
+                <div class="resultado-limpio">
+                    {{ resultado }}
+                </div>
 
                 {% if es_premium %}
-                    
+                    <button type="button" id="btnPDF" onclick="exportarAPDF()" style="background-color: #10b981; color: white; margin-bottom: 20px; font-size: 16px; padding: 12px; width: 100%; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">
+                        📄 Descargar Procedimiento en PDF
+                    </button>
+
                     {% if pasos %}
-                    <div class="pasos-resolucion">
-                        <h4>Procedimiento paso a paso:</h4>
-                        <ul>
-                            {% for paso in pasos %}
-                                <li>{{ paso }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                        <details id="acordeonPasos">
+                            <summary>Ver procedimiento en formato LaTeX</summary>
+                            <ul class="pasos-lista">
+                                {% for paso in pasos %}
+                                    <li>{{ paso | safe }}</li>
+                                {% endfor %}
+                            </ul>
+                        </details>
                     {% endif %}
 
                     {% if grafica %}
-                    <div class="grafica-container">
-                        <h4>Visualización Gráfica:</h4>
-                        <img src="data:image/png;base64, {{ grafica }}" alt="Gráfica matemática generada por Matplotlib">
-                    </div>
+                        <div class="grafica-container">
+                            <img src="data:image/png;base64,{{ grafica }}" alt="Gráfica">
+                        </div>
                     {% endif %}
-
                 {% else %}
                     <div class="paywall-banner">
-                        <p><strong>🔒 Desbloquea el procedimiento detallado y la gráfica interactiva</strong></p>
-                        <p>{{ pasos[0] }}</p>
-                        <a href="/checkout" class="btn-warning">Actualizar a Premium por $49 MXN</a>
+                        <p>🔒 Función Premium Bloqueada</p>
+                        <span style="color: #cbd5e1; display: block; margin-bottom: 20px;">Desbloquea procedimientos detallados de álgebra lineal, visualización y exportación.</span>
+                        <a href="/checkout" class="btn-warning">Actualizar a Premium - $49 MXN</a>
                     </div>
                 {% endif %}
             </div>
         {% endif %}
     </div>
+
+    <script>
+        function mostrarOcultarCampos() {
+            var op = document.getElementById('operacion').value;
+            var c_normal = document.getElementById('contenedor_normal');
+            var c_matriz = document.getElementById('contenedor_matriz');
+            
+            c_normal.style.display = (op === 'matriz') ? 'none' : 'block';
+            c_matriz.style.display = (op === 'matriz') ? 'block' : 'none';
+            
+            document.getElementById('campo_limite').style.display = (op === 'limite') ? 'block' : 'none';
+            document.getElementById('campo_sistema').style.display = (op === 'sistema') ? 'block' : 'none';
+            document.getElementById('campo_variable').style.display = (op === 'sistema') ? 'none' : 'block';
+        }
+        
+        window.onload = mostrarOcultarCampos;
+
+        document.getElementById('calcForm').addEventListener('submit', function() {
+            document.getElementById('btnCalcular').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+            var res = document.getElementById('zonaResultados');
+            if(res) res.style.opacity = '0.5';
+        });
+
+        function exportarAPDF() {
+            const elemento = document.getElementById('zonaResultados');
+            const botonPdf = document.getElementById('btnPDF');
+            const acordeon = document.getElementById('acordeonPasos');
+            const estabaAbierto = acordeon ? acordeon.open : false;
+            
+            if (acordeon) acordeon.open = true; 
+            if (botonPdf) botonPdf.style.display = 'none'; 
+
+            const opciones = {
+                margin:       10,
+                filename:     'Reporte_CalculadoraPro.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, logging: false, useCORS: true, backgroundColor: '#0f172a' },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opciones).from(elemento).save().then(() => {
+                if (botonPdf) botonPdf.style.display = 'block';
+                if (acordeon) acordeon.open = estabaAbierto;
+            });
+        }
+    </script>
 </body>
 </html>
