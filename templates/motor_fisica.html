@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Pro - Física Cinemática</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
+        .subtitulo { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #34495e; }
+        input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background-color: #e67e22; color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #d35400; }
+        .error-msj { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-top: 25px; border-left: 5px solid #dc3545; }
+        .resultados-container { margin-top: 35px; padding: 25px; background-color: #f8f9fa; border-left: 6px solid #e67e22; border-radius: 8px; }
+        .resultados-container h3 { margin-top: 0; color: #d35400; }
+        .pasos-resolucion { margin-top: 20px; }
+        .pasos-resolucion ul { background: #e9ecef; padding: 20px 40px; border-radius: 8px; list-style: none; }
+        .pasos-resolucion li { margin-bottom: 15px; font-size: 16px; color: #2c3e50; line-height: 1.5; }
+        .grafica-container { margin-top: 25px; text-align: center; }
+        .grafica-container img { max-width: 100%; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); }
+        .paywall-banner { background-color: #fff3cd; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center; border: 1px solid #ffeeba; }
+        .btn-warning { display: inline-block; padding: 12px 25px; background-color: #f39c12; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora Pro Física 🚀</h1>
+        <p class="subtitulo">Simulador de Movimiento de Proyectiles (Tiro Parabólico)</p>
+
+        <form method="POST" action="/fisica">
+            <div class="form-group">
+                <label for="velocidad">Velocidad Inicial ($V_0$ en m/s)</label>
+                <input type="number" step="any" name="velocidad" id="velocidad" placeholder="Ej. 25" required>
+            </div>
+
+            <div class="form-group">
+                <label for="angulo">Ángulo de Lanzamiento ($\theta$ en grados $^{\circ}$)</label>
+                <input type="number" step="any" name="angulo" id="angulo" placeholder="Ej. 45" required>
+            </div>
+
+            <button type="submit">Simular Lanzamiento</button>
+        </form>
+
+        {% if error %}
+            <div class="error-msj">{{ error }}</div>
+        {% endif %}
+
+        {% if resultado %}
+            <div class="resultados-container">
+                <h3>Valores Críticos Calculados:</h3>
+                <p><strong>{{ resultado }}</strong></p>
+
+                {% if es_premium %}
+                    {% if pasos %}
+                    <div class="pasos-resolucion">
+                        <h4>Procedimiento y Modelado Fórmulas:</h4>
+                        <ul>
+                            {% for paso in pasos %}
+                                <li>{{ paso }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if grafica %}
+                    <div class="grafica-container">
+                        <h4>Parábola de Trayectoria Real:</h4>
+                        <img src="data:image/png;base64, {{ grafica }}" alt="Trayectoria del proyectil generada">
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="paywall-banner">
+                        <p><strong>🔒 Desbloquea el desarrollo de las ecuaciones vectoriales paso a paso</strong></p>
+                        <p>{{ pasos[0] }}</p>
+                        <a href="/checkout" class="btn-warning">Actualizar a Premium por $49 MXN</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
