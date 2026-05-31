@@ -1,5 +1,7 @@
 import os
 import stripe
+import sympy as sp
+import re
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from dotenv import load_dotenv
 
@@ -70,57 +72,67 @@ def dashboard():
     if usuario_actual.email == CORREO_ADMIN: usuario_actual.es_premium = True
     consultas_usuario = Historial.query.filter_by(usuario_id=usuario_actual.id).order_by(Historial.id.desc()).all()
     return render_template('dashboard.html', usuario=usuario_actual, historial=consultas_usuario)
+# ... (aquí arriba están tus rutas de login, registro, dashboard, etc.) ...
 
+# Pega la función traductora aquí:
+def preparar_ecuacion_para_sympy(ecuacion_cruda):
+    if not ecuacion_cruda:
+        return ""
+    eq = ecuacion_cruda.replace('^', '**')
+    eq = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', eq)
+    eq = re.sub(r'(\d)\(', r'\1*(', eq)
+    eq = re.sub(r'([a-zA-Z])\(', r'\1*(', eq)
+    eq = re.sub(r'\)\(', r')*(', eq)
+    eq = eq.replace(' ', '')
+    return eq
+
+# (Aquí abajo sigue tu ruta)
 @app.route('/matematicas', methods=['GET', 'POST'])
 def matematicas():
-    if 'usuario_id' not in session: return redirect(url_for('login')) 
-    usuario_actual = Usuario.query.get(session['usuario_id'])
-    if not usuario_actual:
-        session.clear()
-        return redirect(url_for('login'))
-    if usuario_actual.email == CORREO_ADMIN: usuario_actual.es_premium = True
-
-    resultado, pasos, grafica, error = None, None, None, None
+    # ... (aquí debe ir tu validación de if 'usuario_id' not in session... si la tienes)
+    es_premium = True # Cambia esto por tu lógica real de usuario.es_premium
 
     if request.method == 'POST':
-        operacion = request.form.get('operacion') 
-        expresion = request.form.get('expresion')
-        variable = request.form.get('variable', 'x')
-        limite_val = request.form.get('limite_val')
+        materia = request.form.get('materia')
+        ecuacion_cruda = request.form.get('ecuacion')
+        
+        # 1. Pasamos la ecuación por el traductor
+        ecuacion_limpia = preparar_ecuacion_para_sympy(ecuacion_cruda)
+        
+        try:
+            x = sp.Symbol('x')
+            expr = sp.sympify(ecuacion_limpia)
+            resultado_final = ""
+            pasos = []
+            
+            if materia == "Álgebra (Ecuaciones)":
+                soluciones = sp.solve(expr, x)
+                resultado_final = f"$$x = {sp.latex(soluciones)}$$"
+                pasos.append(f"1. Ecuación original: $${sp.latex(expr)} = 0$$")
+                pasos.append(f"2. Solución: $${sp.latex(soluciones)}$$")
 
-        if operacion in ['derivada', 'integral', 'limite']:
-            respuesta = resolver_calculo(operacion, expresion, variable, limite_val)
-            tema_guardar = operacion
-        elif operacion == 'sistema':
-            eq2 = request.form.get('expresion2') 
-            var2 = request.form.get('variable2', 'y')
-            respuesta = resolver_sistema_ecuaciones(expresion, eq2, variable, var2)
-            tema_guardar = "Sistema 2x2"
-        elif operacion == 'matriz':
-            op_matriz = request.form.get('operacion_matriz')
-            try:
-                matriz_3x3 = [
-                    [sympify(request.form.get('m00', '0')), sympify(request.form.get('m01', '0')), sympify(request.form.get('m02', '0'))],
-                    [sympify(request.form.get('m10', '0')), sympify(request.form.get('m11', '0')), sympify(request.form.get('m12', '0'))],
-                    [sympify(request.form.get('m20', '0')), sympify(request.form.get('m21', '0')), sympify(request.form.get('m22', '0'))]
-                ]
-                respuesta = resolver_matriz(matriz_3x3, op_matriz)
-                expresion = f"Matriz 3x3 ({op_matriz})"
-                tema_guardar = "Álgebra Lineal"
-            except Exception as e:
-                respuesta = {'exito': False, 'error': 'Verifica los valores ingresados.'}
+            elif materia == "Cálculo (Derivadas)":
+                derivada = sp.diff(expr, x)
+                resultado_final = f"$$f'(x) = {sp.latex(derivada)}$$"
+                pasos.append(f"1. Función original: $$f(x) = {sp.latex(expr)}$$")
+                pasos.append(f"2. Derivada: $$f'(x) = {sp.latex(derivada)}$$")
 
-        if respuesta['exito']:
-            resultado_limpio = respuesta['resultado_limpio']
-            if usuario_actual.es_premium: pasos, grafica = respuesta['pasos'], respuesta['grafica']
-            else: pasos = ["Para ver el procedimiento analítico, actualiza a Premium."]
-            db.session.add(Historial(usuario_id=usuario_actual.id, tema=tema_guardar, problema=expresion, resultado=resultado_limpio))
-            db.session.commit()
-            resultado = resultado_limpio
-        else: error = respuesta['error']
+            elif materia == "Cálculo (Integrales)":
+                integral = sp.integrate(expr, x)
+                resultado_final = f"$$\\int f(x) dx = {sp.latex(integral)} + C$$"
+                pasos.append(f"1. Función original: $$f(x) = {sp.latex(expr)}$$")
+                pasos.append(f"2. Integral: $$\\int f(x) dx = {sp.latex(integral)} + C$$")
 
-    return render_template('motor_matematicas.html', resultado=resultado, pasos=pasos, grafica=grafica, error=error, es_premium=usuario_actual.es_premium)
+            return render_template('motor_matematicas.html', 
+                                   resultado=resultado_final, 
+                                   pasos=pasos, 
+                                   es_premium=es_premium)
+                                   
+        except Exception as e:
+            error_msg = f"No se pudo procesar la expresión '{ecuacion_cruda}'. Verifica la sintaxis."
+            return render_template('motor_matematicas.html', error=error_msg, es_premium=es_premium)
 
+    return render_template('motor_matematicas.html', es_premium=es_premium)
 @app.route('/fisica', methods=['GET', 'POST'])
 def fisica():
     if 'usuario_id' not in session: return redirect(url_for('login'))
